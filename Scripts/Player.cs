@@ -5,29 +5,66 @@ using static Godot.GD;
 public class Player : KinematicBody2D
 {
 	private Vector2 velocity = Vector2.Zero;
-
-	// Called when the node enters the scene tree for the first time.
-	public override void _Ready()
-	{
-
-	}
-
+	[Export]
+	private float speed = 10;
+	[Export]
+	private float gravity = 4;
+	[Export]
+	private float jumpForce = -130;
+	[Export]
+	private float jumpReleaseForce = -70;
+	[Export]
+	private float frictionAmount = 10;
+	[Export]
+	private float accelerationAmount = 10;
 	public override void _PhysicsProcess(float delta)
 	{
-		velocity.y += 2;
-		if (Input.IsActionPressed("move_right"))
+		ApplyGravity();
+		Vector2 input = Vector2.Zero;
+		input.x = Input.GetActionStrength("move_right") - Input.GetActionStrength("move_left");
+
+		if (input.x == 0)
 		{
-			velocity.x = 10;
-		}
-		else if (Input.IsActionPressed("move_left"))
-		{
-			velocity.x = -10;
+			ApplyFriction();
 		}
 		else
 		{
-			velocity.x = 0;
+			ApplyAcceleration(input.x);
 		}
-		velocity = MoveAndSlide(velocity);
+
+		if (Input.IsActionJustPressed("jump") && IsOnFloor())
+		{
+			velocity.y = jumpForce;
+		}
+		else
+		{
+			if (Input.IsActionJustReleased("jump") && velocity.y < jumpReleaseForce)
+			{
+				velocity.y = jumpReleaseForce;
+			}
+
+			if (velocity.y > 0)
+			{
+				velocity.y += gravity;
+			}
+		}
+		velocity = MoveAndSlide(velocity, Vector2.Up);
 	}
+
+
+	private void ApplyGravity()
+	{
+		velocity.y += gravity;
+	}
+	private void ApplyAcceleration(float amount)
+	{
+		velocity.x = Mathf.MoveToward(velocity.x, speed * amount, accelerationAmount);
+	}
+
+	private void ApplyFriction()
+	{
+		velocity.x = Mathf.MoveToward(velocity.x, 0, frictionAmount);
+	}
+
 
 }
